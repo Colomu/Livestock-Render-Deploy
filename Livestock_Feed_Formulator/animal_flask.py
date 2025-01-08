@@ -5,10 +5,11 @@ app = Flask(__name__)
 
 # Dictionary mapping animal types to their respective modules
 animal_modules = {
-    'catfish': 'catfish_formulation',
-    'pig': 'pig_formulation',
-    'poultry': 'poultry_formulation'
+    'catfish': 'Livestock_Feed_Formulator.catfish_formulation',
+    'pig': 'Livestock_Feed_Formulator.pig_formulation',
+    'poultry': 'Livestock_Feed_Formulator.poultry_formulation'
 }
+
 
 @app.route('/')
 def home():
