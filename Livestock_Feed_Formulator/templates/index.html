@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livestock Least Cost Feed Formulation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Open Sans', Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            background: linear-gradient(to right, #007bff, #0056b3);
+            color: white;
+            padding: 20px 0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;                                                       
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h3 {
+            font-weight: 600;
+        }
+        label {
+            font-weight: bold;
+        }
+        select {
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: linear-gradient(to right, #28a745, #218838);
+            color: white;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        button:hover {
+            background: linear-gradient(to right, #218838, #1e7e34);
+        }
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .results-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .result-option {
+            flex: 1 1 calc(33% - 20px); /* Adjusts for 3 items per row */
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .generated {
+            color: #ff7b00; /* Amber color for generated formulations */
+        }
+        .recommended {
+            color: #28a745; /* Green color for recommended formulations */
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Livestock Least Cost Feed Formulation</h1>
+        <p class="lead">Easily generate feed formulations with minimal cost</p>
+    </header>
+
+    <div class="container">
+        <form id="formulationForm" class="mb-4">
+            <h3><b>Select Animal Type, Class, and Ingredients</b></h3>
+
+            <!-- Animal Type Selection -->
+            <div class="mb-3">
+                <label for="animal_type" class="form-label">Select Animal Type:</label>
+                <select id="animal_type" name="animal_type" onchange="updateClasses()">
+                    {% for animal in animal_types %}
+                    <option value="{{ animal }}">{{ animal.capitalize() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Class Selection -->
+            <div class="mb-3">
+                <label for="animal_class" class="form-label">Select Class:</label>
+                <select id="animal_class" name="animal_class">
+                    {% for animal_class in catfish_classes %}
+                    <option value="{{ animal_class }}">{{ animal_class }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Ingredient Selection -->
+            <div class="row">
+                {% for category, options in ingredient_options.items() %}
+                <div class="col-md-4 mb-3">
+                    <label for="{{ category }}" class="form-label">{{ category.replace('_', ' ').title() }}:</label>
+                    <select id="{{ category }}" name="{{ category }}" multiple>
+                        {% for option in options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="button" onclick="submitForm()">Generate Formulations</button>
+        </form>
+
+        <div id="results">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Feed Formulator Tool. Designed by Charles Olomu</p>
+    </footer>
+
+    <script>
+        async function updateClasses() {
+            const animalType = document.getElementById('animal_type').value;
+            const classDropdown = document.getElementById('animal_class');
+
+            classDropdown.innerHTML = '';
+
+            try {
+                const response = await fetch('/get_classes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ animal_type: animalType })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                data.classes.forEach(animalClass => {
+                    const option = document.createElement('option');
+                    option.value = animalClass;
+                    option.textContent = animalClass;
+                    classDropdown.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching classes:', error);
+                alert('An error occurred while fetching classes.');
+            }
+        }
+
+        async function submitForm() {
+            const form = document.getElementById('formulationForm');
+            const formData = new FormData(form);
+
+            const data = {
+                animal_type: formData.get('animal_type'),
+                catfish_class: formData.get('animal_class'),
+                energy_sources: Array.from(formData.getAll('energy_sources')),
+                energy_replacers: Array.from(formData.getAll('energy_replacers')),
+                high_protein_sources: Array.from(formData.getAll('high_protein_sources')),
+                medium_protein_sources: Array.from(formData.getAll('medium_protein_sources')),
+                protein_replacers: Array.from(formData.getAll('protein_replacers')),
+                amino_acid_1: Array.from(formData.getAll('amino_acid_1')),
+                amino_acid_2: Array.from(formData.getAll('amino_acid_2')),
+            };
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>`;
+            
+            try {
+                const response = await fetch('/formulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const results = await response.json();
+
+                if (results.error) {
+                    resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${results.error}</div>`;
+                    return;
+                }
+
+                let htmlContent = '<h3 class="generated">Generated Formulations:</h3>';
+                htmlContent += `<div class="results-container">`;
+                results.formulations.forEach((formulation, index) => {
+                    htmlContent += `
+                        <div class="result-option">
+                            <h4>Option ${index + 1}</h4>
+                            <pre class="generated">${JSON.stringify(formulation, null, 2)}</pre>
+                        </div>`;
+                });
+                htmlContent += `</div>`;
+
+                if (results.recommended_formulations.length > 0) {
+                    htmlContent += '<h3 class="recommended">Recommended Formulations:</h3>';
+                    htmlContent += `<div class="results-container">`;
+                    results.recommended_formulations.forEach((formulation, index) => {
+                        htmlContent += `
+                            <div class="result-option">
+                                <h4>Recommended Option ${index + 1}</h4>
+                                <pre class="recommended">${JSON.stringify(formulation, null, 2)}</pre>
+                            </div>`;
+                    });
+                    htmlContent += `</div>`;
+                } else {
+                    htmlContent += '<h3>No Recommended Formulations Found</h3>';
+                }
+
+                resultsDiv.innerHTML = htmlContent;
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
+            }
+        }
+    </script>
+</body>
+</html>
